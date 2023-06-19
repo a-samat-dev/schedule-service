@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: dev-schedule-service-deployment
-          image: asamatdev/sh-schedule-service:0
+          image: asamatdev/sh-schedule-service:1
           ports:
             - containerPort: 8080
           imagePullPolicy: Always
