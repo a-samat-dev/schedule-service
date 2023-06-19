@@ -11,7 +11,6 @@ env:
   DOCKER_USER: ${{vars.DOCKER_USER}}
   DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
   SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
-  GITHUB_TOKEN: ${{secrets.REPO_ACCESS_TOKEN}}
 
 jobs:
   build:
@@ -40,4 +39,4 @@ jobs:
         name: 'TAG_VERSION'
         value: $((${{ secrets.TAG_VERSION }}+1))
         repository: a-samat-dev/schedule-service
-        token: $GITHUB_TOKEN
+        token: ${{secrets.REPO_ACCESS_TOKEN}}
