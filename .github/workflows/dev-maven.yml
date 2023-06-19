@@ -40,4 +40,4 @@ jobs:
         name: 'TAG_VERSION'
         value: $((${{ secrets.TAG_VERSION }}+1))
         repository: a-samat-dev/schedule-service
-        token: ${{ secrets.REPO_ACCESS_TOKEN }}
+        token: $GITHUB_TOKEN
