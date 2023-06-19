@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-schedule-service-deployment
+  labels:
+    app: dev-schedule-service-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dev-schedule-service-deployment
+  template:
+    metadata:
+      labels:
+        app: dev-schedule-service-deployment
+    spec:
+      containers:
+        - name: dev-schedule-service-deployment
+          image: asamatdev/sh-schedule-service:0
+          ports:
+            - containerPort: 8080
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: dev-sh-secrets
+            - configMapRef:
+                name: dev-sh-config-maps
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 200m
+            limits:
+              memory: 512Mi
+              cpu: 300m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dev-schedule-service
+spec:
+  selector:
+    app: dev-schedule-service-deployment
+  ports:
+    - port: 8080
+      targetPort: 8080
