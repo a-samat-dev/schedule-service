@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
@@ -27,21 +27,21 @@ public class ScheduleEntity {
     private UUID userId;
 
     @Column(name = "start_date_time", nullable = false)
-    private LocalDateTime startDateTime;
+    private OffsetDateTime startDateTime;
 
     @Column(name = "end_date_time", nullable = false)
-    private LocalDateTime endDateTime;
+    private OffsetDateTime endDateTime;
 
     @Column(name = "is_reserved", nullable = false)
-    private boolean isReserved;
+    private Boolean isReserved;
 
     @Column(name = "created_at", nullable = false)
-    protected LocalDateTime createdAt;
+    protected OffsetDateTime createdAt;
 
     @PrePersist
     private void prePersist() {
         if (this.createdAt == null) {
-            this.createdAt = LocalDateTime.now();
+            this.createdAt = OffsetDateTime.now();
         }
     }
 }

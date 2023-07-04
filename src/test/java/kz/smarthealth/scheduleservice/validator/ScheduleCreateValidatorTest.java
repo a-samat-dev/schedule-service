@@ -8,7 +8,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.OffsetTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,48 +53,16 @@ class ScheduleCreateValidatorTest {
     }
 
     @Test
-    void isValid_returnsFalse_whenInvalidStartDateTimeMinutes() {
+    void isValid_returnsFalse_whenStartDateInPast() {
         // given
         when(constraintValidatorContext.buildConstraintViolationWithTemplate(any())).thenReturn(constraintViolationBuilder);
         when(constraintViolationBuilder.addPropertyNode(anyString())).thenReturn(nodeBuilderCustomizableContext);
         ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
                 .userId(USER_ID)
-                .startDateTime(LocalDateTime.now().plusHours(2).withMinute(1))
-                .endDateTime(LocalDateTime.now().plusHours(3).withMinute(0))
-                .interval(30)
-                .build();
-        // when
-        boolean result = underTest.isValid(scheduleCreateDTO, constraintValidatorContext);
-        // then
-        assertFalse(result);
-    }
-
-    @Test
-    void isValid_returnsFalse_whenInvalidEndDateTimeMinutes() {
-        // given
-        when(constraintValidatorContext.buildConstraintViolationWithTemplate(any())).thenReturn(constraintViolationBuilder);
-        when(constraintViolationBuilder.addPropertyNode(anyString())).thenReturn(nodeBuilderCustomizableContext);
-        ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
-                .userId(USER_ID)
-                .startDateTime(LocalDateTime.now().plusHours(2).withMinute(0))
-                .endDateTime(LocalDateTime.now().plusHours(3).withMinute(1))
-                .interval(30)
-                .build();
-        // when
-        boolean result = underTest.isValid(scheduleCreateDTO, constraintValidatorContext);
-        // then
-        assertFalse(result);
-    }
-
-    @Test
-    void isValid_returnsFalse_whenStartDateTimeInPast() {
-        // given
-        when(constraintValidatorContext.buildConstraintViolationWithTemplate(any())).thenReturn(constraintViolationBuilder);
-        when(constraintViolationBuilder.addPropertyNode(anyString())).thenReturn(nodeBuilderCustomizableContext);
-        ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
-                .userId(USER_ID)
-                .startDateTime(LocalDateTime.now().minusHours(1).withMinute(0))
-                .endDateTime(LocalDateTime.now().plusHours(3).withMinute(0))
+                .startDate(LocalDate.now().minusDays(1))
+                .endDate(LocalDate.now().plusDays(1))
+                .workingDayStartTime(OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC))
+                .workingDayEndTime(OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC))
                 .interval(15)
                 .build();
         // when
@@ -102,32 +72,17 @@ class ScheduleCreateValidatorTest {
     }
 
     @Test
-    void isValid_returnsFalse_whenEndDateTimeBeforeStartDateTime() {
+    void isValid_returnsFalse_whenEndDateBeforeStartDate() {
         // given
         when(constraintValidatorContext.buildConstraintViolationWithTemplate(any())).thenReturn(constraintViolationBuilder);
         when(constraintViolationBuilder.addPropertyNode(anyString())).thenReturn(nodeBuilderCustomizableContext);
         ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
                 .userId(USER_ID)
-                .startDateTime(LocalDateTime.now().plusHours(2).withMinute(0))
-                .endDateTime(LocalDateTime.now().plusHours(1).withMinute(0))
+                .startDate(LocalDate.now().plusDays(2))
+                .endDate(LocalDate.now().plusDays(1))
+                .workingDayStartTime(OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC))
+                .workingDayEndTime(OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC))
                 .interval(15)
-                .build();
-        // when
-        boolean result = underTest.isValid(scheduleCreateDTO, constraintValidatorContext);
-        // then
-        assertFalse(result);
-    }
-
-    @Test
-    void isValid_returnsFalse_whenDifferenceBetweenStartAndEndDatetimeLessThenInterval() {
-        // given
-        when(constraintValidatorContext.buildConstraintViolationWithTemplate(any())).thenReturn(constraintViolationBuilder);
-        when(constraintViolationBuilder.addPropertyNode(anyString())).thenReturn(nodeBuilderCustomizableContext);
-        ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
-                .userId(USER_ID)
-                .startDateTime(LocalDateTime.now().plusHours(2).withMinute(0))
-                .endDateTime(LocalDateTime.now().plusHours(2).withMinute(0).plusMinutes(15))
-                .interval(30)
                 .build();
         // when
         boolean result = underTest.isValid(scheduleCreateDTO, constraintValidatorContext);
@@ -142,10 +97,31 @@ class ScheduleCreateValidatorTest {
         when(constraintViolationBuilder.addPropertyNode(anyString())).thenReturn(nodeBuilderCustomizableContext);
         ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
                 .userId(USER_ID)
-                .startDateTime(LocalDateTime.now().plusHours(2).withMinute(0))
-                .endDateTime(LocalDateTime.now().plusHours(3).withMinute(0))
+                .startDate(LocalDate.now().plusDays(1))
+                .endDate(LocalDate.now().plusDays(2))
+                .workingDayStartTime(OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC))
+                .workingDayEndTime(OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC))
                 .interval(20)
                 .build();
+        // when
+        boolean result = underTest.isValid(scheduleCreateDTO, constraintValidatorContext);
+        // then
+        assertFalse(result);
+    }
+
+    @Test
+    void isValid_returnsFalse_whenWorkingDayEndTimeIsBeforeStartTime() {
+        // given
+        ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
+                .userId(USER_ID)
+                .startDate(LocalDate.now().plusDays(1))
+                .endDate(LocalDate.now().plusDays(2))
+                .workingDayStartTime(OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC))
+                .workingDayEndTime(OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC))
+                .interval(15)
+                .build();
+        when(constraintValidatorContext.buildConstraintViolationWithTemplate(any())).thenReturn(constraintViolationBuilder);
+        when(constraintViolationBuilder.addPropertyNode(anyString())).thenReturn(nodeBuilderCustomizableContext);
         // when
         boolean result = underTest.isValid(scheduleCreateDTO, constraintValidatorContext);
         // then
@@ -157,8 +133,10 @@ class ScheduleCreateValidatorTest {
         // given
         ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
                 .userId(USER_ID)
-                .startDateTime(LocalDateTime.now().plusHours(2).withMinute(0))
-                .endDateTime(LocalDateTime.now().plusHours(3).withMinute(0))
+                .startDate(LocalDate.now().plusDays(1))
+                .endDate(LocalDate.now().plusDays(2))
+                .workingDayStartTime(OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC))
+                .workingDayEndTime(OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC))
                 .interval(15)
                 .build();
         // when

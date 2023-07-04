@@ -1,21 +1,18 @@
 package kz.smarthealth.scheduleservice.service;
 
-import kz.smarthealth.scheduleservice.exception.CustomException;
 import kz.smarthealth.scheduleservice.model.dto.ScheduleCreateDTO;
+import kz.smarthealth.scheduleservice.model.dto.ScheduleDTO;
 import kz.smarthealth.scheduleservice.model.entity.ScheduleEntity;
 import kz.smarthealth.scheduleservice.repository.ScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-
-import static kz.smarthealth.scheduleservice.util.MessageSource.RESERVED_SCHEDULES_EXIST;
 
 /**
  * Service class that works with scheduling of doctor's services
@@ -39,20 +36,19 @@ public class ScheduleService {
     @Transactional
     public void createSchedules(ScheduleCreateDTO scheduleCreateDTO) {
         UUID userId = scheduleCreateDTO.getUserId();
-        LocalDateTime startDateTime = scheduleCreateDTO.getStartDateTime().withSecond(0).withNano(0);
-        LocalDateTime endDateTime = scheduleCreateDTO.getEndDateTime().withSecond(0).withNano(0);
-
-        if (!scheduleRepository.findAllReservedSchedulesByUserIdBetweenDates(userId, startDateTime,
-                endDateTime).isEmpty()) {
-            throw CustomException.builder()
-                    .httpStatus(HttpStatus.BAD_REQUEST)
-                    .error(RESERVED_SCHEDULES_EXIST.name())
-                    .errorMessage(RESERVED_SCHEDULES_EXIST.getText())
-                    .build();
-        }
-
+        LocalDate startDate = scheduleCreateDTO.getStartDate();
+        LocalDate endDate = scheduleCreateDTO.getEndDate();
+        OffsetDateTime startDateTime = OffsetDateTime.of(startDate,
+                scheduleCreateDTO.getWorkingDayStartTime().toLocalTime(),
+                scheduleCreateDTO.getWorkingDayStartTime().getOffset());
+        OffsetDateTime endDateTime = OffsetDateTime.of(endDate, scheduleCreateDTO.getWorkingDayEndTime().toLocalTime(),
+                scheduleCreateDTO.getWorkingDayEndTime().getOffset());
+        List<ScheduleEntity> reservedScheduleEntities = scheduleRepository
+                .findAllReservedSchedulesByUserIdBetweenDates(userId, startDateTime, endDateTime);
+        List<ScheduleEntity> scheduleEntities = getScheduleEntities(scheduleCreateDTO);
+        removeReservedSchedules(scheduleEntities, reservedScheduleEntities);
         scheduleRepository.deleteAllOverlappingSchedulesByUserUdBetweenDates(userId, startDateTime, endDateTime);
-        scheduleRepository.saveAll(getScheduleEntities(scheduleCreateDTO));
+        scheduleRepository.saveAll(scheduleEntities);
     }
 
     /**
@@ -63,20 +59,84 @@ public class ScheduleService {
      */
     private static List<ScheduleEntity> getScheduleEntities(ScheduleCreateDTO scheduleCreateDTO) {
         int interval = scheduleCreateDTO.getInterval();
-        LocalDateTime startDateTime = scheduleCreateDTO.getStartDateTime().withSecond(0).withNano(0);
-        LocalDateTime endDateTime = startDateTime.plusMinutes(interval).withSecond(0).withNano(0);
+        OffsetDateTime startDateTime = OffsetDateTime.of(scheduleCreateDTO.getStartDate(),
+                scheduleCreateDTO.getWorkingDayStartTime().toLocalTime(),
+                scheduleCreateDTO.getWorkingDayStartTime().getOffset()).withOffsetSameInstant(ZoneOffset.UTC);
+        OffsetDateTime endDateTime = startDateTime.plusMinutes(interval);
+        OffsetTime workingDayStartTime = scheduleCreateDTO.getWorkingDayStartTime();
+        OffsetTime workingDayEndTime = scheduleCreateDTO.getWorkingDayEndTime();
         List<ScheduleEntity> scheduleEntityList = new LinkedList<>();
 
-        while (endDateTime.minusMinutes(1).isBefore(scheduleCreateDTO.getEndDateTime())) {
+        while (endDateTime.isBefore(OffsetDateTime.of(scheduleCreateDTO.getEndDate().plusDays(1),
+                LocalTime.of(0, 1), scheduleCreateDTO.getWorkingDayStartTime().getOffset()))) {
+            if (startDateTime.toOffsetTime().isBefore(workingDayStartTime)
+                    || startDateTime.toOffsetTime().isAfter(workingDayEndTime)
+                    || endDateTime.toOffsetTime().isAfter(workingDayEndTime)
+                    || endDateTime.toOffsetTime().isBefore(workingDayStartTime)) {
+                startDateTime = endDateTime;
+                endDateTime = startDateTime.plusMinutes(interval);
+                continue;
+            }
+
             scheduleEntityList.add(ScheduleEntity.builder()
                     .userId(scheduleCreateDTO.getUserId())
                     .startDateTime(startDateTime)
                     .endDateTime(endDateTime)
+                    .isReserved(false)
                     .build());
             startDateTime = endDateTime;
             endDateTime = startDateTime.plusMinutes(interval);
         }
 
         return scheduleEntityList;
+    }
+
+    /**
+     * Gets all schedules by user for the next 3 months from now
+     *
+     * @param userId user id
+     * @return list of schedules
+     */
+    public List<ScheduleDTO> getSchedulesByUserId(UUID userId) {
+        List<ScheduleEntity> scheduleEntityList = scheduleRepository.findAllByUserIdBetweenDates(userId,
+                OffsetDateTime.now(), OffsetDateTime.now().plusMonths(3));
+
+        return scheduleEntityList.stream()
+                .map(scheduleEntity -> modelMapper.map(scheduleEntity, ScheduleDTO.class))
+                .toList();
+    }
+
+    /**
+     * Removes overlapping schedules from new schedules list
+     *
+     * @param scheduleEntities         new schedules list
+     * @param reservedScheduleEntities already existing reserved schedules list
+     * @return schedules list
+     */
+    private List<ScheduleEntity> removeReservedSchedules(List<ScheduleEntity> scheduleEntities,
+                                                         List<ScheduleEntity> reservedScheduleEntities) {
+        if (scheduleEntities.isEmpty() || reservedScheduleEntities.isEmpty()) {
+            return scheduleEntities;
+        }
+
+        int i = 0;
+        int j = 0;
+
+        while (i < scheduleEntities.size() && j < reservedScheduleEntities.size()) {
+            OffsetDateTime startDateTime = reservedScheduleEntities.get(j).getStartDateTime();
+            OffsetDateTime endDateTime = reservedScheduleEntities.get(j).getEndDateTime();
+            ScheduleEntity scheduleEntity = scheduleEntities.get(i);
+
+            if (!scheduleEntity.getEndDateTime().isAfter(startDateTime)) {
+                i++;
+            } else if (!scheduleEntity.getStartDateTime().isBefore(endDateTime)) {
+                j++;
+            } else {
+                scheduleEntities.remove(scheduleEntity);
+                i++;
+            }
+        }
+
+        return scheduleEntities;
     }
 }

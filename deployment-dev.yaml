@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: dev-schedule-service-deployment
-          image: asamatdev/sh-schedule-service:2
+          image: asamatdev/sh-schedule-service:3
           ports:
             - containerPort: 8080
           imagePullPolicy: Always
@@ -28,10 +28,10 @@ spec:
           resources:
             requests:
               memory: 256Mi
-              cpu: 200m
+              cpu: 50m
             limits:
               memory: 512Mi
-              cpu: 300m
+              cpu: 100m
 ---
 apiVersion: v1
 kind: Service

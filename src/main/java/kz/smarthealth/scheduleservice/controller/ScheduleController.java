@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * API to work with doctor/organization schedules
@@ -33,5 +34,11 @@ public class ScheduleController {
     @ResponseStatus(HttpStatus.CREATED)
     public void createSchedules(@RequestBody @Valid ScheduleCreateDTO scheduleCreateDTO) {
         scheduleService.createSchedules(scheduleCreateDTO);
+    }
+
+    @Log
+    @GetMapping("/by-user-id/{userId}")
+    public List<ScheduleDTO> getSchedulesByUserId(@PathVariable UUID userId) {
+        return scheduleService.getSchedulesByUserId(userId);
     }
 }
