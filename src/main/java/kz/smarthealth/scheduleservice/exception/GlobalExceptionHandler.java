@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 import static java.util.stream.Collectors.toMap;
@@ -28,7 +28,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, String> invalidFields = ex.getFieldErrors().stream()
                 .collect(toMap(FieldError::getField, DefaultMessageSourceResolvable::getDefaultMessage));
         ErrorResponseDTO errorResponseDTO = ErrorResponseDTO.builder()
-                .dateTime(OffsetDateTime.now())
+                .dateTime(LocalDateTime.now())
                 .code(status.value())
                 .message("Validation Error")
                 .invalidFields(invalidFields)
@@ -40,7 +40,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorResponseDTO> handleCustomException(CustomException ex) {
         ErrorResponseDTO errorResponseDTO = ErrorResponseDTO.builder()
-                .dateTime(OffsetDateTime.now())
+                .dateTime(LocalDateTime.now())
                 .code(ex.getHttpStatus().value())
                 .message(ex.getErrorMessage())
                 .build();

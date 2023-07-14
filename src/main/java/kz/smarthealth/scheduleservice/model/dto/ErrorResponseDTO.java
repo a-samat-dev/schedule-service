@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Data
@@ -17,7 +17,7 @@ import java.util.Map;
 public class ErrorResponseDTO {
 
     @JsonFormat(pattern = AppConstants.DEFAULT_DATE_TIME_FORMAT)
-    private OffsetDateTime dateTime;
+    private LocalDateTime dateTime;
 
     private int code;
 

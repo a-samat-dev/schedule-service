@@ -10,7 +10,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.OffsetTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
@@ -37,10 +37,12 @@ public class ScheduleCreateDTO {
     private LocalDate endDate;
     @NotNull
     @JsonFormat(shape = STRING, pattern = AppConstants.DEFAULT_TIME_FORMAT)
-    private OffsetTime workingDayStartTime;
+    private LocalTime workingDayStartTime;
     @NotNull
     @JsonFormat(shape = STRING, pattern = AppConstants.DEFAULT_TIME_FORMAT)
-    private OffsetTime workingDayEndTime;
+    private LocalTime workingDayEndTime;
+    @NotNull
+    private String zoneOffset;
     @NotNull
     private Integer interval;
 }

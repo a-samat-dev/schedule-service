@@ -41,4 +41,11 @@ public class ScheduleController {
     public List<ScheduleDTO> getSchedulesByUserId(@PathVariable UUID userId) {
         return scheduleService.getSchedulesByUserId(userId);
     }
+
+    @Log
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteScheduleById(@PathVariable UUID id) {
+        scheduleService.deleteScheduleById(id);
+    }
 }

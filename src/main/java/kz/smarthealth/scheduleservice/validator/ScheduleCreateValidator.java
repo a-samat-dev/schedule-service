@@ -5,7 +5,8 @@ import jakarta.validation.ConstraintValidatorContext;
 import kz.smarthealth.scheduleservice.model.dto.ScheduleCreateDTO;
 
 import java.time.LocalDate;
-import java.time.OffsetTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.Set;
 
 /**
@@ -32,6 +33,9 @@ public class ScheduleCreateValidator implements ConstraintValidator<ScheduleCrea
             return false;
         }
         if (!isEndDateBeforeStartDate(startDate, endDate, constraintValidatorContext)) {
+            return false;
+        }
+        if (!isValidZoneOffset(scheduleCreateDTO.getZoneOffset(), constraintValidatorContext)) {
             return false;
         }
         if (!isValidInterval(interval, constraintValidatorContext)) {
@@ -72,6 +76,19 @@ public class ScheduleCreateValidator implements ConstraintValidator<ScheduleCrea
         return true;
     }
 
+    private boolean isValidZoneOffset(String zoneOffset, ConstraintValidatorContext constraintValidatorContext) {
+        try {
+            ZoneId.of(zoneOffset);
+        } catch (Exception e) {
+            constraintValidatorContext.buildConstraintViolationWithTemplate("Invalid zone offset")
+                    .addPropertyNode("zoneOffset")
+                    .addConstraintViolation();
+            return false;
+        }
+
+        return true;
+    }
+
     private static boolean isValidInterval(int interval, ConstraintValidatorContext constraintValidatorContext) {
         if (!VALID_INTERVALS.contains(interval)) {
             constraintValidatorContext.buildConstraintViolationWithTemplate("Invalid interval")
@@ -84,8 +101,8 @@ public class ScheduleCreateValidator implements ConstraintValidator<ScheduleCrea
         return true;
     }
 
-    private boolean isValidWorkingDayTimes(OffsetTime workingDayStartTime,
-                                           OffsetTime workingDayEndTime,
+    private boolean isValidWorkingDayTimes(LocalTime workingDayStartTime,
+                                           LocalTime workingDayEndTime,
                                            ConstraintValidatorContext constraintValidatorContext) {
         if (workingDayEndTime.isBefore(workingDayStartTime)) {
             constraintValidatorContext.buildConstraintViolationWithTemplate("Invalid working day end time")

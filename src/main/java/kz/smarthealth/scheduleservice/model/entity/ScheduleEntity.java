@@ -5,9 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.UuidGenerator;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Entity
@@ -19,29 +21,28 @@ import java.util.UUID;
 public class ScheduleEntity {
 
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @UuidGenerator
     private UUID id;
 
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
     @Column(name = "start_date_time", nullable = false)
-    private OffsetDateTime startDateTime;
+    private LocalDateTime startDateTime;
 
     @Column(name = "end_date_time", nullable = false)
-    private OffsetDateTime endDateTime;
+    private LocalDateTime endDateTime;
 
     @Column(name = "is_reserved", nullable = false)
     private Boolean isReserved;
 
     @Column(name = "created_at", nullable = false)
-    protected OffsetDateTime createdAt;
+    protected LocalDateTime createdAt;
 
     @PrePersist
     private void prePersist() {
         if (this.createdAt == null) {
-            this.createdAt = OffsetDateTime.now();
+            this.createdAt = LocalDateTime.now(ZoneId.of(ZoneOffset.UTC.toString()));
         }
     }
 }

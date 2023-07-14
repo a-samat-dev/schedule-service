@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
@@ -23,13 +23,13 @@ public class ScheduleDTO {
     private UUID userId;
 
     @JsonFormat(shape = STRING, pattern = AppConstants.DEFAULT_DATE_TIME_FORMAT)
-    private OffsetDateTime startDateTime;
+    private LocalDateTime startDateTime;
 
     @JsonFormat(shape = STRING, pattern = AppConstants.DEFAULT_DATE_TIME_FORMAT)
-    private OffsetDateTime endDateTime;
+    private LocalDateTime endDateTime;
 
     private Boolean isReserved;
 
     @JsonFormat(shape = STRING, pattern = AppConstants.DEFAULT_DATE_TIME_FORMAT)
-    protected OffsetDateTime createdAt;
+    protected LocalDateTime createdAt;
 }

@@ -8,11 +8,13 @@ import kz.smarthealth.scheduleservice.model.dto.ScheduleCreateDTO;
 import kz.smarthealth.scheduleservice.model.entity.ScheduleEntity;
 import kz.smarthealth.scheduleservice.repository.ScheduleRepository;
 import kz.smarthealth.scheduleservice.util.AppConstants;
+import kz.smarthealth.scheduleservice.util.MessageSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -20,12 +22,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import java.time.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static kz.smarthealth.scheduleservice.util.AppConstants.UTC_ZONE_ID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -69,12 +75,13 @@ class ScheduleControllerTest {
                 ErrorResponseDTO.class);
         Map<String, String> invalidFields = errorResponseDTO.getInvalidFields();
 
-        assertEquals(6, invalidFields.size());
+        assertEquals(7, invalidFields.size());
         assertTrue(invalidFields.containsKey("userId"));
         assertTrue(invalidFields.containsKey("startDate"));
         assertTrue(invalidFields.containsKey("endDate"));
         assertTrue(invalidFields.containsKey("workingDayStartTime"));
         assertTrue(invalidFields.containsKey("workingDayEndTime"));
+        assertTrue(invalidFields.containsKey("zoneOffset"));
         assertTrue(invalidFields.containsKey("interval"));
     }
 
@@ -83,14 +90,15 @@ class ScheduleControllerTest {
         // given
         LocalDate startDate = LocalDate.now().minusDays(1);
         LocalDate endDate = LocalDate.now().plusDays(3);
-        OffsetTime workingDayStartTime = OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC);
-        OffsetTime workingDayEndTime = OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC);
+        LocalTime workingDayStartTime = LocalTime.of(9, 0);
+        LocalTime workingDayEndTime = LocalTime.of(18, 0);
         ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
                 .userId(UUID.randomUUID())
                 .startDate(startDate)
                 .endDate(endDate)
                 .workingDayStartTime(workingDayStartTime)
                 .workingDayEndTime(workingDayEndTime)
+                .zoneOffset("+06:00")
                 .interval(60)
                 .build();
         String requestBody = objectMapper.writeValueAsString(scheduleCreateDTO);
@@ -114,14 +122,15 @@ class ScheduleControllerTest {
         // given
         LocalDate startDate = LocalDate.now().plusDays(3);
         LocalDate endDate = LocalDate.now().plusDays(2);
-        OffsetTime workingDayStartTime = OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC);
-        OffsetTime workingDayEndTime = OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC);
+        LocalTime workingDayStartTime = LocalTime.of(9, 0);
+        LocalTime workingDayEndTime = LocalTime.of(18, 0);
         ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
                 .userId(UUID.randomUUID())
                 .startDate(startDate)
                 .endDate(endDate)
                 .workingDayStartTime(workingDayStartTime)
                 .workingDayEndTime(workingDayEndTime)
+                .zoneOffset("+06:00")
                 .interval(15)
                 .build();
         String requestBody = objectMapper.writeValueAsString(scheduleCreateDTO);
@@ -146,14 +155,15 @@ class ScheduleControllerTest {
         // given
         LocalDate startDate = LocalDate.now().plusDays(2);
         LocalDate endDate = LocalDate.now().plusDays(3);
-        OffsetTime workingDayStartTime = OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC);
-        OffsetTime workingDayEndTime = OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC);
+        LocalTime workingDayStartTime = LocalTime.of(9, 0);
+        LocalTime workingDayEndTime = LocalTime.of(18, 0);
         ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
                 .userId(UUID.randomUUID())
                 .startDate(startDate)
                 .endDate(endDate)
                 .workingDayStartTime(workingDayStartTime)
                 .workingDayEndTime(workingDayEndTime)
+                .zoneOffset("+06:00")
                 .interval(20)
                 .build();
         String requestBody = objectMapper.writeValueAsString(scheduleCreateDTO);
@@ -177,14 +187,15 @@ class ScheduleControllerTest {
         // given
         LocalDate startDate = LocalDate.now().plusDays(2);
         LocalDate endDate = LocalDate.now().plusDays(3);
-        OffsetTime workingDayStartTime = OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC);
-        OffsetTime workingDayEndTime = OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC);
+        LocalTime workingDayStartTime = LocalTime.of(18, 0);
+        LocalTime workingDayEndTime = LocalTime.of(9, 0);
         ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
                 .userId(UUID.randomUUID())
                 .startDate(startDate)
                 .endDate(endDate)
                 .workingDayStartTime(workingDayStartTime)
                 .workingDayEndTime(workingDayEndTime)
+                .zoneOffset("+06:00")
                 .interval(15)
                 .build();
         String requestBody = objectMapper.writeValueAsString(scheduleCreateDTO);
@@ -209,15 +220,15 @@ class ScheduleControllerTest {
         UUID userId = UUID.randomUUID();
         LocalDate startDate = LocalDate.now().plusDays(2);
         LocalDate endDate = LocalDate.now().plusDays(3);
-        ZoneOffset zoneOffset = ZoneOffset.ofHours(6);
-        OffsetTime workingDayStartTime = OffsetTime.of(9, 0, 0, 0, zoneOffset);
-        OffsetTime workingDayEndTime = OffsetTime.of(18, 0, 0, 0, zoneOffset);
+        LocalTime workingDayStartTime = LocalTime.of(9, 0);
+        LocalTime workingDayEndTime = LocalTime.of(18, 0);
         ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
                 .userId(userId)
                 .startDate(startDate)
                 .endDate(endDate)
                 .workingDayStartTime(workingDayStartTime)
                 .workingDayEndTime(workingDayEndTime)
+                .zoneOffset("+06:00")
                 .interval(60)
                 .build();
         String requestBody = objectMapper.writeValueAsString(scheduleCreateDTO);
@@ -229,21 +240,31 @@ class ScheduleControllerTest {
                 .andExpect(status().isCreated()).andReturn();
         // then
         List<ScheduleEntity> scheduleEntityList = scheduleRepository.findAllByUserIdBetweenDates(userId,
-                OffsetDateTime.now(), OffsetDateTime.now().plusDays(90));
-        OffsetDateTime currStartDateTime = OffsetDateTime.of(scheduleCreateDTO.getStartDate(),
-                LocalTime.of(scheduleCreateDTO.getWorkingDayStartTime().getHour(),
-                        scheduleCreateDTO.getWorkingDayStartTime().getMinute()),
-                scheduleCreateDTO.getWorkingDayStartTime().getOffset());
-        OffsetDateTime currEndDateTime = currStartDateTime.plusMinutes(scheduleCreateDTO.getInterval());
+                LocalDateTime.now(), LocalDateTime.now().plusDays(90));
+        ZoneId zoneId = ZoneId.of(scheduleCreateDTO.getZoneOffset());
+        LocalDateTime currStartDateTime = LocalDateTime.of(startDate, scheduleCreateDTO.getWorkingDayStartTime())
+                .atZone(zoneId).withZoneSameInstant(UTC_ZONE_ID).toLocalDateTime();
 
         assertFalse(scheduleEntityList.isEmpty());
         assertEquals(18, scheduleEntityList.size());
 
-        for (ScheduleEntity scheduleEntity : scheduleEntityList) {
+        for (int i = 0; i < scheduleEntityList.size(); i++) {
+            ScheduleEntity scheduleEntity = scheduleEntityList.get(i);
             assertNotNull(scheduleEntity.getId());
             assertEquals(userId, scheduleEntity.getUserId());
+            assertEquals(currStartDateTime, scheduleEntity.getStartDateTime());
+            assertEquals(currStartDateTime.plusMinutes(scheduleCreateDTO.getInterval()),
+                    scheduleEntity.getEndDateTime());
             assertFalse(scheduleEntity.getIsReserved());
             assertNotNull(scheduleEntity.getCreatedAt());
+
+            if (i == 8) {
+                currStartDateTime = LocalDateTime.of(startDate.plusDays(1),
+                                scheduleCreateDTO.getWorkingDayStartTime())
+                        .atZone(zoneId).withZoneSameInstant(UTC_ZONE_ID).toLocalDateTime();
+            } else {
+                currStartDateTime = currStartDateTime.plusMinutes(scheduleCreateDTO.getInterval());
+            }
         }
     }
 
@@ -281,7 +302,6 @@ class ScheduleControllerTest {
         // then
         assertFalse(schedules.isEmpty());
         assertEquals(scheduleEntityList.size(), schedules.size());
-        ZoneId utc = ZoneId.of("UTC");
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(AppConstants.DEFAULT_DATE_TIME_FORMAT);
 
         for (int i = 0; i < scheduleEntityList.size(); i++) {
@@ -290,37 +310,100 @@ class ScheduleControllerTest {
 
             assertEquals(entity.getId().toString(), dto.get("id").toString());
             assertEquals(userId.toString(), dto.get("userId").toString());
-            assertEquals(entity.getStartDateTime().atZoneSameInstant(utc).format(dateTimeFormatter),
-                    dto.get("startDateTime"));
-            assertEquals(entity.getEndDateTime().atZoneSameInstant(utc).format(dateTimeFormatter),
-                    dto.get("endDateTime"));
-            assertEquals(entity.getIsReserved(), dto.get("isReserved"));
-            assertEquals(entity.getCreatedAt().atZoneSameInstant(utc).format(dateTimeFormatter),
-                    dto.get("createdAt").toString());
+            assertEquals(dateTimeFormatter.format(scheduleEntityList.get(i).getStartDateTime()), dto.get("startDateTime"));
+            assertEquals(dateTimeFormatter.format(scheduleEntityList.get(i).getEndDateTime()), dto.get("endDateTime"));
+            assertFalse((Boolean) dto.get("isReserved"));
+            assertNotNull(dto.get("createdAt"));
         }
+    }
+
+    @Test
+    void deleteScheduleById_returnsBadRequest_whenScheduleNotFound() throws Exception {
+        // given
+        UUID id = UUID.randomUUID();
+        // when
+        MvcResult mvcResult = this.mockMvc.perform(MockMvcRequestBuilders.delete(
+                                "/api/v1/schedules/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding("utf-8"))
+                .andExpect(status().isBadRequest()).andReturn();
+        // then
+        ErrorResponseDTO errorResponseDTO = objectMapper.readValue(mvcResult.getResponse().getContentAsString(),
+                ErrorResponseDTO.class);
+
+        assertNotNull(errorResponseDTO.getDateTime());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), errorResponseDTO.getCode());
+        assertEquals(MessageSource.SCHEDULE_NOT_FOUND.getText(id.toString()), errorResponseDTO.getMessage());
+    }
+
+    @Test
+    void deleteScheduleById_returnsBadRequest_whenScheduleReserved() throws Exception {
+        // given
+        LocalDateTime startDateTime = LocalDateTime.now().plusDays(1);
+        ScheduleEntity scheduleEntity = ScheduleEntity.builder()
+                .userId(UUID.randomUUID())
+                .startDateTime(startDateTime)
+                .endDateTime(startDateTime.plusMinutes(30))
+                .isReserved(true)
+                .createdAt(LocalDateTime.now().minusDays(1))
+                .build();
+        scheduleEntity = scheduleRepository.save(scheduleEntity);
+        // when
+        MvcResult mvcResult = this.mockMvc.perform(MockMvcRequestBuilders.delete(
+                                "/api/v1/schedules/" + scheduleEntity.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding("utf-8"))
+                .andExpect(status().isBadRequest()).andReturn();
+        // then
+        ErrorResponseDTO errorResponseDTO = objectMapper.readValue(mvcResult.getResponse().getContentAsString(),
+                ErrorResponseDTO.class);
+
+        assertNotNull(errorResponseDTO.getDateTime());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), errorResponseDTO.getCode());
+        assertEquals(MessageSource.SCHEDULE_RESERVED.getText(), errorResponseDTO.getMessage());
+    }
+
+    @Test
+    void deleteScheduleById_deletesSchedule() throws Exception {
+        // given
+        LocalDateTime startDateTime = LocalDateTime.now().plusDays(1);
+        ScheduleEntity scheduleEntity = ScheduleEntity.builder()
+                .userId(UUID.randomUUID())
+                .startDateTime(startDateTime)
+                .endDateTime(startDateTime.plusMinutes(30))
+                .isReserved(false)
+                .createdAt(LocalDateTime.now().minusDays(1))
+                .build();
+        scheduleEntity = scheduleRepository.save(scheduleEntity);
+        // when
+        this.mockMvc.perform(MockMvcRequestBuilders.delete(
+                                "/api/v1/schedules/" + scheduleEntity.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding("utf-8"))
+                .andExpect(status().isNoContent()).andReturn();
     }
 
     private List<ScheduleEntity> createSchedules(UUID userId) {
         ScheduleEntity schedule1 = scheduleRepository.save(ScheduleEntity.builder()
                 .userId(userId)
-                .startDateTime(OffsetDateTime.now().plusHours(1).withMinute(45).withSecond(0).withNano(0))
-                .endDateTime(OffsetDateTime.now().plusHours(2).withMinute(0).withSecond(0).withNano(0))
+                .startDateTime(LocalDateTime.now().plusHours(1).withMinute(45).withSecond(0).withNano(0))
+                .endDateTime(LocalDateTime.now().plusHours(2).withMinute(0).withSecond(0).withNano(0))
                 .isReserved(false)
-                .createdAt(OffsetDateTime.now())
+                .createdAt(LocalDateTime.now())
                 .build());
         ScheduleEntity schedule2 = scheduleRepository.save(ScheduleEntity.builder()
                 .userId(userId)
-                .startDateTime(OffsetDateTime.now().plusHours(2).withMinute(0).withSecond(0).withNano(0))
-                .endDateTime(OffsetDateTime.now().plusHours(2).withMinute(30).withSecond(0).withNano(0))
+                .startDateTime(LocalDateTime.now().plusHours(2).withMinute(0).withSecond(0).withNano(0))
+                .endDateTime(LocalDateTime.now().plusHours(2).withMinute(30).withSecond(0).withNano(0))
                 .isReserved(false)
-                .createdAt(OffsetDateTime.now())
+                .createdAt(LocalDateTime.now())
                 .build());
         ScheduleEntity schedule3 = scheduleRepository.save(ScheduleEntity.builder()
                 .userId(userId)
-                .startDateTime(OffsetDateTime.now().plusHours(3).withMinute(0).withSecond(0).withNano(0))
-                .endDateTime(OffsetDateTime.now().plusHours(3).withMinute(15).withSecond(0).withNano(0))
+                .startDateTime(LocalDateTime.now().plusHours(3).withMinute(0).withSecond(0).withNano(0))
+                .endDateTime(LocalDateTime.now().plusHours(3).withMinute(15).withSecond(0).withNano(0))
                 .isReserved(false)
-                .createdAt(OffsetDateTime.now())
+                .createdAt(LocalDateTime.now())
                 .build());
         schedule1 = scheduleRepository.save(schedule1);
         schedule2 = scheduleRepository.save(schedule2);

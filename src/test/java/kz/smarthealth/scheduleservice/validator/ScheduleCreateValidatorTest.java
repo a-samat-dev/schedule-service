@@ -9,8 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.time.OffsetTime;
-import java.time.ZoneOffset;
+import java.time.LocalTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -61,8 +60,9 @@ class ScheduleCreateValidatorTest {
                 .userId(USER_ID)
                 .startDate(LocalDate.now().minusDays(1))
                 .endDate(LocalDate.now().plusDays(1))
-                .workingDayStartTime(OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC))
-                .workingDayEndTime(OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC))
+                .workingDayStartTime(LocalTime.of(9, 0))
+                .workingDayEndTime(LocalTime.of(18, 0))
+                .zoneOffset("+06:00")
                 .interval(15)
                 .build();
         // when
@@ -80,9 +80,30 @@ class ScheduleCreateValidatorTest {
                 .userId(USER_ID)
                 .startDate(LocalDate.now().plusDays(2))
                 .endDate(LocalDate.now().plusDays(1))
-                .workingDayStartTime(OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC))
-                .workingDayEndTime(OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC))
+                .workingDayStartTime(LocalTime.of(9, 0))
+                .workingDayEndTime(LocalTime.of(18, 0))
+                .zoneOffset("+06:00")
                 .interval(15)
+                .build();
+        // when
+        boolean result = underTest.isValid(scheduleCreateDTO, constraintValidatorContext);
+        // then
+        assertFalse(result);
+    }
+
+    @Test
+    void isValid_returnsFalse_whenInvalidZoneOffset() {
+        // given
+        when(constraintValidatorContext.buildConstraintViolationWithTemplate(any())).thenReturn(constraintViolationBuilder);
+        when(constraintViolationBuilder.addPropertyNode(anyString())).thenReturn(nodeBuilderCustomizableContext);
+        ScheduleCreateDTO scheduleCreateDTO = ScheduleCreateDTO.builder()
+                .userId(USER_ID)
+                .startDate(LocalDate.now().plusDays(1))
+                .endDate(LocalDate.now().plusDays(2))
+                .workingDayStartTime(LocalTime.of(9, 0))
+                .workingDayEndTime(LocalTime.of(18, 0))
+                .zoneOffset("invalid")
+                .interval(30)
                 .build();
         // when
         boolean result = underTest.isValid(scheduleCreateDTO, constraintValidatorContext);
@@ -99,8 +120,9 @@ class ScheduleCreateValidatorTest {
                 .userId(USER_ID)
                 .startDate(LocalDate.now().plusDays(1))
                 .endDate(LocalDate.now().plusDays(2))
-                .workingDayStartTime(OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC))
-                .workingDayEndTime(OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC))
+                .workingDayStartTime(LocalTime.of(9, 0))
+                .workingDayEndTime(LocalTime.of(18, 0))
+                .zoneOffset("+06:00")
                 .interval(20)
                 .build();
         // when
@@ -116,8 +138,9 @@ class ScheduleCreateValidatorTest {
                 .userId(USER_ID)
                 .startDate(LocalDate.now().plusDays(1))
                 .endDate(LocalDate.now().plusDays(2))
-                .workingDayStartTime(OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC))
-                .workingDayEndTime(OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC))
+                .workingDayStartTime(LocalTime.of(18, 0))
+                .workingDayEndTime(LocalTime.of(9, 0))
+                .zoneOffset("+06:00")
                 .interval(15)
                 .build();
         when(constraintValidatorContext.buildConstraintViolationWithTemplate(any())).thenReturn(constraintViolationBuilder);
@@ -135,8 +158,9 @@ class ScheduleCreateValidatorTest {
                 .userId(USER_ID)
                 .startDate(LocalDate.now().plusDays(1))
                 .endDate(LocalDate.now().plusDays(2))
-                .workingDayStartTime(OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC))
-                .workingDayEndTime(OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC))
+                .workingDayStartTime(LocalTime.of(9, 0))
+                .workingDayEndTime(LocalTime.of(18, 0))
+                .zoneOffset("+06:00")
                 .interval(15)
                 .build();
         // when
